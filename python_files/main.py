@@ -10,6 +10,7 @@ from aiohttp.helpers import TOKEN
 from dotenv import load_dotenv
 from discord import Intents, Client, Message
 from responses import get_response, user_games
+from youtube_videos import check_for_new_videos
 
 # Load token from somewhere safe
 load_dotenv()
@@ -31,66 +32,6 @@ last_video_id: str = None
 if not os.path.exists(TEXT_FILES_DIR):
     os.makedirs(TEXT_FILES_DIR)
 
-# Save the last video ID to a file using the channel name
-def save_last_video_id(channel_name: str, video_id: str) -> None:
-    file_path = os.path.join(TEXT_FILES_DIR, f"{channel_name}_{LAST_VIDEO_ID_FILE}")
-    with open(file_path, 'w') as file:
-        file.write(f"{video_id}\n")
-
-# Read the last video ID from a file using the channel name
-def read_last_video_id(channel_name: str) -> str:
-    file_path: str = os.path.join(TEXT_FILES_DIR, f"{channel_name}_{LAST_VIDEO_ID_FILE}")
-    if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
-            return file.readline().strip()  # Read only the first line which contains the video ID
-    return None
-
-# Update the get_latest_video_id function to return the video ID and channel name
-def get_latest_video_id(channel_id: str) -> tuple[str, str]:
-    url = f"https://www.googleapis.com/youtube/v3/search?key={YOUTUBE_API_KEY}&channelId={channel_id}&part=snippet,id&order=date&maxResults=1"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        if 'items' in data and len(data['items']) > 0:
-            video_id = data['items'][0]['id'].get('videoId')
-            channel_name = data['items'][0]['snippet']['channelTitle']
-            return video_id, channel_name
-    return None, None
-
-# Modify the check_for_new_videos function to use the channel name for file operations
-async def check_for_new_videos(discord_channel: discord.TextChannel) -> None:
-    for channel_id in CHANNEL_IDS:
-        # Get the latest video ID and channel name
-        latest_video_id, channel_name = get_latest_video_id(channel_id)
-
-        # Read the last video ID using the channel name
-        last_video_id = read_last_video_id(channel_name)
-
-        # If there's a new video, send a notification
-        if latest_video_id and latest_video_id != last_video_id:
-            save_last_video_id(channel_name, latest_video_id)  # Update the last video ID in the file
-            video_url = f"https://www.youtube.com/watch?v={latest_video_id}"
-            await discord_channel.send(f"New video published on channel {channel_name}: {video_url}")
-
-# Message event
-async def send_message(message: Message, user_message: str) -> None:
-    if not user_message:
-        print('Message was empty because intents were not enabled')
-        return
-
-    is_private = user_message.startswith('?')
-    if is_private:
-        user_message = user_message[1:]
-
-    try:
-        response: str = get_response(user_message, str(message.author.id))
-        if is_private:
-            await message.author.send(response)
-        else:
-            await message.channel.send(response)
-    except Exception as e:
-        print(f"Error: {e}")
-
 # Handling the startup
 @client.event
 async def on_ready() -> None:
@@ -103,9 +44,14 @@ async def on_ready() -> None:
     # Check for new videos periodically
     while True:
         await check_for_new_videos(discord_channel)
-        await asyncio.sleep(600)  # Check every 5 minutes
+        await asyncio.sleep(600)  # Check every 10 minutes
         print("10 minutes have passed, checking for new videos again.")
         print(f'The bot actualised at : {time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())}')
+
+# Define the send_message function
+async def send_message(message: Message, user_message: str) -> None:
+    response = get_response(user_message)
+    await message.channel.send(response)
 
 # Handling messages
 @client.event

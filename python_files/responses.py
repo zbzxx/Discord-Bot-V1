@@ -1,5 +1,5 @@
 from random import choice, randint
-from passwordGen import generate_password
+from password_gen import generate_password
 import os
 
 # Store game state and points for each user
