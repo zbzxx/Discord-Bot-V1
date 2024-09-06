@@ -18,7 +18,7 @@ YOUTUBE_API_KEY: Final[str] = os.getenv("YOUTUBE_API_KEY")
 CHANNEL_IDS: Final[list[str]] = os.getenv("YOUTUBE_CHANNEL_IDS").split(',')
 DISCORD_CHANNEL_ID: Final[int] = int(os.getenv("DISCORD_CHANNEL_ID"))
 LAST_VIDEO_ID_FILE: Final[str] = "last_video_id.txt"
-TEXT_FILES_DIR = os.path.join("..", "text_file")
+TEXT_FILES_DIR = os.path.join("..", "text_files")
 
 # Bot setup
 intents: Intents = Intents.default()
@@ -39,7 +39,7 @@ def save_last_video_id(channel_name: str, video_id: str) -> None:
 
 # Read the last video ID from a file using the channel name
 def read_last_video_id(channel_name: str) -> str:
-    file_path = os.path.join(TEXT_FILES_DIR, f"{channel_name}_{LAST_VIDEO_ID_FILE}")
+    file_path: str = os.path.join(TEXT_FILES_DIR, f"{channel_name}_{LAST_VIDEO_ID_FILE}")
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
             return file.readline().strip()  # Read only the first line which contains the video ID
