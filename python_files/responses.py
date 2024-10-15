@@ -49,6 +49,13 @@ def get_response(user_input: str, user_id: str) -> str:
         return 'Hello there!'
     elif 'how are you' in lowered:
         return 'Good, thanks!'
+    elif 'info' in lowered:
+        return (
+            "This bot was created by zbzx as a project for a Python learning course. "
+            "\nIt offers a multitude of functions, including a password generator, a dice roller, a Genshin Impact character build recommender, and more! "
+            "\nYou can find the source code at https://github.com/zbzxx/Discord-Bot-V1"
+            "\nIf you have any questions or suggestions, feel free to ask. Additionally, if you want to learn more about the bot, you can read the documentation in the README.md file and the GitBook documentation."
+        )
     elif 'help' in lowered:
         return '''
         # I can help you with the following commands:
