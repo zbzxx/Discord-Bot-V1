@@ -59,7 +59,8 @@ o Roll dice
 o Password
 o Start game
 o Points
-o To ask me a question in private messages, you can use the '?' prefix.'
+o To ask me a question in private messages, you can use the '?' prefix.
+o To get a Genshin Impact character build, use the '-gc' command followed by the character name.
         '''
     elif 'bye' in lowered:
         return 'See you!'
@@ -71,22 +72,5 @@ o To ask me a question in private messages, you can use the '?' prefix.'
         return start_number_game(user_id)
     elif 'points' in lowered:
         return get_user_points(user_id)
-    elif user_id in user_games:
-        try:
-            guess = int(user_input)
-            game = user_games[user_id]
-            game['tries'] += 1
-            if guess < game['number']:
-                return 'Too low! Try again.'
-            elif guess > game['number']:
-                return 'Too high! Try again.'
-            else:
-                points = max(100 - game['tries'], 0)
-                user_points[user_id] = user_points.get(user_id, 0) + points
-                save_points_to_file(user_id)
-                del user_games[user_id]
-                return f'Correct! You guessed the number in {game["tries"]} tries and earned {points} points. Total points: {user_points[user_id]}'
-        except ValueError:
-            return 'Please enter a valid number.'
     else:
         return choice(['I do not understand...', 'What are you talking about?', 'Do you mind rephrasing that?'])

@@ -1,7 +1,7 @@
 import os
 import requests
 import discord
-from typing import Final
+from typing import Final, Tuple, Any
 
 # Load environment variables
 from dotenv import load_dotenv
@@ -23,7 +23,7 @@ def save_last_video_id(channel_name: str, video_id: str) -> None:
         file.write(f"{video_id}\n")
 
 # Read the last video ID from a file using the channel name
-def read_last_video_id(channel_name: str) -> str:
+def read_last_video_id(channel_name: str) -> str | None:
     file_path = os.path.join(TEXT_FILES_DIR, f"{channel_name}_last_video_id.txt")
     if os.path.exists(file_path):
         with open(file_path, 'r') as file:
@@ -31,7 +31,7 @@ def read_last_video_id(channel_name: str) -> str:
     return None
 
 # Get the latest video ID and channel name
-def get_latest_video_id(channel_id: str) -> tuple[str, str]:
+def get_latest_video_id(channel_id: str) -> tuple[str, str] | tuple[None, None]:
     url = f"https://www.googleapis.com/youtube/v3/search?key={YOUTUBE_API_KEY}&channelId={channel_id}&part=snippet,id&order=date&maxResults=1"
     response = requests.get(url)
     if response.status_code == 200:
@@ -43,7 +43,7 @@ def get_latest_video_id(channel_id: str) -> tuple[str, str]:
     return None, None
 
 # Check for new videos and send notifications
-async def check_for_new_videos(discord_channel: discord.TextChannel) -> None:
+async def check_for_new_videos(discord_channel: discord.TextChannel, youtube_role_id: int) -> None:
     for channel_id in CHANNEL_IDS:
         # Get the latest video ID and channel name
         latest_video_id, channel_name = get_latest_video_id(channel_id)
@@ -55,4 +55,4 @@ async def check_for_new_videos(discord_channel: discord.TextChannel) -> None:
         if latest_video_id and latest_video_id != last_video_id:
             save_last_video_id(channel_name, latest_video_id)  # Update the last video ID in the file
             video_url = f"https://www.youtube.com/watch?v={latest_video_id}"
-            await discord_channel.send(f"New video published on channel {channel_name}: {video_url}")
+            await discord_channel.send(f"New video published on channel {channel_name}: {video_url} ! <@&{youtube_role_id}>")
