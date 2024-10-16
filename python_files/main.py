@@ -5,7 +5,6 @@ import os
 import asyncio
 from dotenv import load_dotenv
 from discord import Intents, Client, Message
-from numpy import character
 
 from responses import get_response, user_games
 from youtube_videos import check_for_new_videos
@@ -69,6 +68,9 @@ async def on_message(message: Message) -> None:
         return
 
     if user_message.startswith('-gc'):
+        if len(user_message) < 4:
+            await message.channel.send("Please provide a character name after '-gc'.")
+            return
         character_name = user_message[4:].strip()
         build_response = await get_genshin_build(character_name)
         await message.channel.send(build_response)
@@ -91,27 +93,31 @@ async def get_genshin_build(character_name: str) -> str:
         if response.status_code == 200:
             build_data = response.json()
 
-            # Format the build data into a readable string
+            # Assurez-vous que toutes les clés existent
+            if 'top_weapons' not in build_data or 'artifacts' not in build_data or 'talents' not in build_data:
+                return f"Build data for '{character_name}' is incomplete."
+
             build_message = f"**{character_name.capitalize()} Build**\n"
-            build_message += f"**Top Weapons**: {', '.join(build_data['top_weapons'])}\n"
-            build_message += f"**Artifact Set**: {build_data['artifacts']['set_name']}\n"
+            build_message += f"**Top Weapons**: {', '.join(build_data.get('top_weapons', []))}\n"
+            build_message += f"**Artifact Set**: {build_data['artifacts'].get('set_name', 'N/A')}\n"
 
             build_message += "**Main Stats**:\n"
-            build_message += f"  - Flower: {build_data['artifacts']['flower']['main_stat']} (Substats: {', '.join(build_data['artifacts']['flower']['substats'])})\n"
-            build_message += f"  - Feather: {build_data['artifacts']['feather']['main_stat']} (Substats: {', '.join(build_data['artifacts']['feather']['substats'])})\n"
-            build_message += f"  - Sands: {build_data['artifacts']['sands']['main_stat']} (Substats: {', '.join(build_data['artifacts']['sands']['substats'])})\n"
-            build_message += f"  - Goblet: {build_data['artifacts']['goblet']['main_stat']} (Substats: {', '.join(build_data['artifacts']['goblet']['substats'])})\n"
-            build_message += f"  - Circlet: {build_data['artifacts']['circlet']['main_stat']} (Substats: {', '.join(build_data['artifacts']['circlet']['substats'])})\n"
+            for artifact in ['flower', 'feather', 'sands', 'goblet', 'circlet']:
+                main_stat = build_data['artifacts'].get(artifact, {}).get('main_stat', 'N/A')
+                substats = build_data['artifacts'].get(artifact, {}).get('substats', [])
+                build_message += f"  - {artifact.capitalize()}: {main_stat} (Substats: {', '.join(substats)})\n"
 
             build_message += "\n**Talents**:\n"
-            build_message += f"{', '.join(build_data['talents'])}\n"
-
+            build_message += f"{', '.join(build_data.get('talents', []))}\n"
 
             return build_message
         else:
             return f"Character '{character_name}' not found."
+    except requests.exceptions.RequestException as req_err:
+        return f"Request error: {req_err}"
     except Exception as e:
         return f"An error occurred: {e}"
+
 
 # Run the bot
 def main() -> None:
