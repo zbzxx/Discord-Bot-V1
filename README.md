@@ -14,7 +14,7 @@ Discord-Bot-V1 is a multifunctional Discord bot that provides various utilities 
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/Discord-Bot-V1.git
+   git clone https://github.com/zbzxx/Discord-Bot-V1.git
    ```
 2. Navigate to the project directory:
    ```bash
