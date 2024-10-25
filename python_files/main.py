@@ -1,4 +1,6 @@
 import time
+from http.client import responses
+
 import requests
 from typing import Final
 import os
@@ -53,7 +55,6 @@ async def send_message(message: Message, user_message: str) -> None:
     await message.channel.send(response)
 
 # Handling messages
-# Handling messages
 @client.event
 async def on_message(message: Message) -> None:
     if message.author == client.user:
@@ -67,13 +68,20 @@ async def on_message(message: Message) -> None:
         await send_message(message, user_message)
         return
 
+    # Check if the message starts with the prefix '-gc' if so, get the Genshin Impact build for the character
     if user_message.startswith('-gc'):
         if len(user_message) < 4:
             await message.channel.send("Please provide a character name after '-gc'.")
             return
         character_name = user_message[4:].strip()
-        build_response = await get_genshin_build(character_name)
-        await message.channel.send(build_response)
+
+        # Si le nom de personnage est 'help', vous pouvez appeler la fonction list_characters
+        if character_name.lower() == 'help':
+            help_response = await get_available_characters()  # Ajoutez cette fonction ci-dessous
+            await message.channel.send(help_response)
+        else:
+            build_response = await get_genshin_build(character_name)
+            await message.channel.send(build_response)
         return
 
     # Check if the message starts with the prefix '!'
@@ -84,7 +92,6 @@ async def on_message(message: Message) -> None:
         return
 
 
-
 async def get_genshin_build(character_name: str) -> str:
     try:
         url = f'http://127.0.0.1:5000/builds/{character_name}'
@@ -93,26 +100,46 @@ async def get_genshin_build(character_name: str) -> str:
         if response.status_code == 200:
             build_data = response.json()
 
-            # Assurez-vous que toutes les clés existent
+            # Ensure that all keys exist
             if 'top_weapons' not in build_data or 'artifacts' not in build_data or 'talents' not in build_data:
-                return f"Build data for '{character_name}' is incomplete."
+                return f"`Build data for '{character_name}' is incomplete.`"
 
-            build_message = f"**{character_name.capitalize()} Build**\n"
-            build_message += f"**Top Weapons**: {', '.join(build_data.get('top_weapons', []))}\n"
-            build_message += f"**Artifact Set**: {build_data['artifacts'].get('set_name', 'N/A')}\n"
+            build_message = f"{character_name.capitalize()} Build\n"
+            build_message += f"Top Weapons: {', '.join(build_data.get('top_weapons', []))}\n"
+            build_message += f"Artifact Set: {build_data['artifacts'].get('set_name', 'N/A')}\n"
 
-            build_message += "**Main Stats**:\n"
+            build_message += "Main Stats:\n"
             for artifact in ['flower', 'feather', 'sands', 'goblet', 'circlet']:
                 main_stat = build_data['artifacts'].get(artifact, {}).get('main_stat', 'N/A')
                 substats = build_data['artifacts'].get(artifact, {}).get('substats', [])
                 build_message += f"  - {artifact.capitalize()}: {main_stat} (Substats: {', '.join(substats)})\n"
 
-            build_message += "\n**Talents**:\n"
+            build_message += "\nTalents:\n"
             build_message += f"{', '.join(build_data.get('talents', []))}\n"
 
-            return build_message
+            # Wrap the message in triple backticks for a multi-line code block
+            return f"```\n{build_message}```"
+
         else:
             return f"Character '{character_name}' not found."
+    except requests.exceptions.RequestException as req_err:
+        return f"Request error: {req_err}"
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+async def get_available_characters() -> str:
+    try:
+        url = 'http://127.0.0.1:5000/builds/help'
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            data = response.json()
+            characters = data.get('character', [])
+
+            formatted_characters = "\n".join([f"  - {char}" for char in characters])
+            return f"```Available characters:\n{formatted_characters}```"
+        else:
+            return "Failed to retrieve characters."
     except requests.exceptions.RequestException as req_err:
         return f"Request error: {req_err}"
     except Exception as e:
